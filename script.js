@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls';
-// import { CCDIKSolver } from 'three/examples/jsm/animation/CCDIKSolver.js';
 
 
-let scene, camera, renderer, controls, arm = {}, raycaster, mouse, knife, thisarm = [];
+let scene, camera, renderer, controls, arm = {}, raycaster, mouse, knife, thisarm = [], jointAngles ={};
 
 // Initial rotation values
 const initialRotations = {
@@ -13,6 +12,35 @@ const initialRotations = {
     elbow: 0, 
     wrist: 0,
 };
+
+function updateAngle(joint) {
+    const angleInput = document.getElementById(`${joint}Angle`);
+    jointAngles[joint] = parseFloat(angleInput.value);
+
+    // Here, update the arm's rotation based on the angle
+    // For example:
+    if (joint === 'base') {
+        thisarm[0].rotation.z = THREE.MathUtils.degToRad(jointAngles.base);
+    } else if (joint === 'shoulder') {
+        thisarm[1].rotation.y = THREE.MathUtils.degToRad(jointAngles.shoulder);
+    } else if (joint === 'elbow') {
+        thisarm[2].rotation.y = THREE.MathUtils.degToRad(jointAngles.elbow);
+    } else if (joint === 'wrist') {
+        thisarm[3].rotation.y = THREE.MathUtils.degToRad(jointAngles.wrist);
+    }
+}
+
+function computeForwardKinematics() {
+    // Example FK computation (simplified):
+    // You would replace this with the actual FK based on the robotic arm’s configuration
+
+    // Assume you can calculate the position of the end effector here:
+    const endEffectorPosition = thisarm[3].getWorldPosition(new THREE.Vector3());
+
+    // Display the computed position
+    document.getElementById('fkResult').textContent =
+        `Position: (X: ${endEffectorPosition.x.toFixed(2)}, Y: ${endEffectorPosition.y.toFixed(2)}, Z: ${endEffectorPosition.z.toFixed(2)})`;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize scene
@@ -35,10 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // OrbitControls setup (for model rotation and zoom)
     controls = new OrbitControls(camera, renderer.domElement);
-
-    // Initialize mouse and raycaster for detecting clicks
-    raycaster = new THREE.Raycaster();
-    mouse = new THREE.Vector2();
 
     // Load the GLTF model
     const loader = new GLTFLoader();
@@ -100,8 +124,17 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('An error happened while loading the model:', error);
     });
     
-    window.addEventListener('click', (event) => {
-        onMouseClick(event);
+    // window.addEventListener('click', (event) => {
+    //     onMouseClick(event);
+    // });
+
+    document.getElementById("computeFKButton").addEventListener("click", () => {
+        updateAngle('base');
+        updateAngle('shoulder');
+        updateAngle('elbow');
+        updateAngle('wrist');
+
+        computeForwardKinematics();
     });
 
     // Reset button functionality
@@ -134,79 +167,3 @@ document.addEventListener('DOMContentLoaded', () => {
     animate();
 });
 
-
-// Raycasting to detect mouse click
-function onMouseClick(event) {
-    event.preventDefault();
-
-    // Convert mouse click to normalized device coordinates
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-    // Define a ground plane at y = 0 or any specific height you'd like
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-
-    // Find the intersection point of the ray with the plane
-    const targetPosition = new THREE.Vector3();
-
-    raycaster.ray.intersectPlane(plane, targetPosition);
-    // Check intersection with the grid
-
-    console.log(targetPosition);
-    jacobianTransposeIK(thisarm, knife, targetPosition);
-}
-
-// Example setup: `arm` is an array of joints (THREE.Object3D) from base to end-effector
-// `targetPosition` is the target point in THREE.Vector3
-function jacobianTransposeIK(arm, endEffector, targetPosition, learningRate = 0.1, tolerance = 0.1, maxIterations = 10) {
-    let iterations = 0;
-    
-    while (iterations < maxIterations) {
-        // Calculate the vector from the end effector to the target position
-        const toTarget = new THREE.Vector3().subVectors(targetPosition, endEffector.getWorldPosition(new THREE.Vector3()));
-        
-        // Stop if we are within tolerance
-        if (toTarget.length() < tolerance) break;
-        
-        // Initialize the Jacobian matrix (3 rows for x, y, z; columns = number of joints)
-        const jacobian = [];
-        // Loop through each joint and compute the Jacobian column for that joint
-        for (let i = 0; i < arm.length; i++) {
-            //console.log(`Processing joint ${i}:`, arm[i]);
-            const joint = arm[i];
-            // Get the joint's current world position
-            const jointPosition = joint.getWorldPosition(new THREE.Vector3());
-            
-            // Calculate the vector from this joint to the end effector
-            const toEndEffector = new THREE.Vector3().subVectors(endEffector.getWorldPosition(new THREE.Vector3()), jointPosition);
-
-            // Calculate the axis of rotation for this joint (assuming rotation around local Z-axis)
-            const rotationAxis = new THREE.Vector3(1, 0, 0).applyQuaternion(joint.quaternion).normalize();
-
-            // Calculate the Jacobian column as the cross product of the rotation axis and the vector to the end effector
-            const jacobianColumn = new THREE.Vector3().crossVectors(rotationAxis, toEndEffector);
-
-            // Store the column in the Jacobian matrix
-            jacobian.push(jacobianColumn);
-        }
-
-        // Apply the Jacobian transpose to approximate the necessary joint rotations
-        for (let i = 0; i < arm.length - 1; i++) {
-            const joint = arm[i];
-            const jacobianColumn = jacobian[i];
-            
-            // Compute the "gradient" of movement for this joint
-            const gradient = jacobianColumn.dot(toTarget) * learningRate;
-
-            // Update the joint's rotation based on the computed gradient (assuming rotation around Z-axis)
-            if(joint.name == 'base'){
-                joint.rotation.z += gradient;
-            }else{
-                joint.rotation.y += gradient;
-            }
-        }
-
-        iterations++;
-    }
-}

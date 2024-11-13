@@ -7,14 +7,44 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="slider-container">
-        <label>base rotation <input type="range" id="baseSlider" min="-180" max="180" value="0"></label>
-        <label>shoulder rotation <input type="range" id="shoulderSlider" min="-180" max="180" value="0"></label>
-        <label>elbow rotation <input type="range" id="elbowSlider" min="-180" max="180" value="0"></label>
-        <label>wrist rotation <input type="range" id="wristSlider" min="-180" max="180" value="0"></label>
-        <button id="resetButton">reset</button>
+    <!-- Main container for 3D scene and overlays -->
+    <div id="renderContainer">
+        <!-- Left sidebar for Forward Kinematics -->
+        <div class="sidebar">
+            <h2>Forward Kinematics</h2>
+            <table id="angleTable">
+                <tr><th>Joint</th><th>Angle (°)</th></tr>
+                <tr><td>Base</td><td><input type="number" id="baseAngle" value="0"></td></tr>
+                <tr><td>Shoulder</td><td><input type="number" id="shoulderAngle" value="0"></td></tr>
+                <tr><td>Elbow</td><td><input type="number" id="elbowAngle" value="0"></td></tr>
+                <tr><td>Wrist</td><td><input type="number" id="wristAngle" value="0"></td></tr>
+            </table>
+            <button id="computeFKButton">Compute FK</button>
+            <div id="fkResult">Position: (X, Y, Z)</div>
+        </div>
+
+        <!-- Slider controls (middle) -->
+        <div class="slider-container">
+            <label>Base Rotation <input type="range" id="baseSlider" min="-180" max="180" value="0"></label>
+            <label>Shoulder Rotation <input type="range" id="shoulderSlider" min="-180" max="180" value="0"></label>
+            <label>Elbow Rotation <input type="range" id="elbowSlider" min="-180" max="180" value="0"></label>
+            <label>Wrist Rotation <input type="range" id="wristSlider" min="-180" max="180" value="0"></label>
+            <button id="resetButton">Reset</button>
+        </div>
+
+        <!-- Right sidebar for Inverse Kinematics -->
+        <div class="ik-table">
+            <h2>Inverse Kinematics</h2>
+            <table id="posTable">
+                <tr><th>Axis</th><th>Position</th></tr>
+                <tr><td>X</td><td><input type="number" id="xPos" value="0"></td></tr>
+                <tr><td>Y</td><td><input type="number" id="yPos" value="0"></td></tr>
+                <tr><td>Z</td><td><input type="number" id="zPos" value="0"></td></tr>
+            </table>
+            <button id="computeIKButton">Compute IK</button>
+            <div id="ikResult">Angles: (Base, Shoulder, Elbow, Wrist)</div>
+        </div>
     </div>
-    <script type = "module" src = "script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
-

@@ -99,22 +99,107 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: rgb(133, 133, 133);
+  background-color: rgb(133, 133, 133, 0.5);
   font-family: Arial, sans-serif;
 }
 
-#container {
-  width: 100%;
-  height: 600px;
-}
-
-.slider-container {
+#renderContainer {
+  position: absolute;
+  width: 95%;
+  height: 250px;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-top: 20px;
+  flex-direction: row;
+  justify-content: space-between;
+  z-index: 1; /* ensures it sits above the 3D render */
+  margin-top: 5px;;
 }
 
 .slider {
   margin: 10px 0;
+}
+
+/* Container for Layout */
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* FK Table (Left Section) */
+.sidebar {
+  width: 20%;
+  height: 80%;
+  padding: 10px;
+  padding-top: 1px;
+  background-color: rgb(133, 133, 133, 0.5);
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  border: none;
+}
+
+/* Sliders (Middle Section) */
+.slider-container {
+  width: 20%;
+  height: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgb(133, 133, 133, 0.5);
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+}
+
+/* IK Table (Right Section) */
+.ik-table {
+  width: 20%;
+  height: 70%;
+  padding: 10px;
+  padding-top: 1px;
+  background-color: rgb(133, 133, 133, 0.5);
+  border: none;
+}
+
+/* Table Styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 2px;
+  padding: 1px;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.2em;
+  margin-top: 1px;
+  margin-bottom: 1px;
+}
+
+button {
+  margin-top: 5px;
+  padding: 6px;
+  font-size: 0.9em;
+  border: none;
+  border-radius: 4px;
+  background-color: black;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: black;
+}
+
+#fkResult, #ikResult {
+  font-weight: bold;
+  margin-top: 1px;
+  color: #fff;
 }
