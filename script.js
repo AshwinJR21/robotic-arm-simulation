@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls';
 
 
-let scene, camera, renderer, controls, arm = {}, raycaster, mouse, knife, thisarm = [], jointAngles ={};
+let scene, camera, renderer, controls, arm = {}, raycaster, mouse, knife, thisarm = [], jointAngles ={}, endEffectorMesh;
 
 // Initial rotation values
 const initialRotations = {
@@ -40,6 +40,62 @@ function computeForwardKinematics() {
     // Display the computed position
     document.getElementById('fkResult').textContent =
         `Position: (X: ${endEffectorPosition.x.toFixed(2)}, Y: ${endEffectorPosition.y.toFixed(2)}, Z: ${endEffectorPosition.z.toFixed(2)})`;
+}
+
+function computeInverseKinematics() {
+    const x = document.getElementById('xPos').value;
+    const y = document.getElementById('yPos').value;
+    const z = document.getElementById('zPos').value;
+    const L1 = 10;
+    const L2 = 11;
+
+    scalingFactor = 7.8125;
+    // Step 1: Calculate theta0 for rotation in the x-y plane
+    let theta0 = Math.atan2(z, x);
+    
+    // Project target point onto the x-z plane
+    let x_prime = Math.sqrt(x ** 2 + z ** 2);
+    
+    // Step 2: Calculate distance D in the x-z plane from the base to the target point
+    let D = Math.sqrt(x_prime ** 2 + y ** 2);
+    
+    // Check if the point is reachable
+    if (D > (L1 + L2) || D < Math.abs(L1 - L2)) {
+        console.log("point is out of reach");
+        return "Point is out of reach";
+    }
+    
+    // Step 3: Calculate theta2 using the cosine rule
+    let cos_theta2 = (D ** 2 - L1 ** 2 - L2 ** 2) / (2 * L1 * L2);
+    let theta2 = Math.acos(cos_theta2);
+    
+    // Step 4: Calculate theta1
+    // Calculate auxiliary angles alpha and beta
+    let alpha = Math.atan2(y, x_prime);
+    let beta = Math.asin((L2 * Math.sin(theta2)) / D);
+    console.log(x_prime);
+
+    let theta1 = alpha - beta;
+
+    // Convert radians to degrees for easier interpretation (optional)
+    let theta0_deg = (theta0 * 180) / Math.PI;
+    let theta1_deg = (theta1 * 180) / Math.PI;
+    let theta2_deg = (theta2 * 180) / Math.PI;
+
+    thisarm[0].rotation.z = theta0;
+    thisarm[1].rotation.y = theta1;
+    thisarm[2].rotation.y = theta2;
+
+    // Calculate the end effector position using forward kinematics
+    let x_end = L1 * Math.cos(theta1) + L2 * Math.cos(theta1 + theta2);
+    let y_end = L1 * Math.sin(theta1) + L2 * Math.sin(theta1 + theta2);
+    let z_end = z;  // Assuming no change in Z-axis (2D movement)
+
+    // Display the computed position
+    document.getElementById('ikResult').textContent =
+        `Angles: (B: ${theta0_deg.toFixed(2)}, S: ${theta1_deg.toFixed(2)}, E: ${theta2_deg.toFixed(2)})`;
+
+    return {'efx': x_end, 'efy': y_end, 'efz': z_end};
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -91,6 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
         gridHelper2.rotation.z = Math.PI / 2;
         scene.add(gridHelper2);
 
+        let endEffectorGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        let endEffectorMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        endEffectorMesh = new THREE.Mesh(endEffectorGeometry, endEffectorMaterial);
+        // Add the end effector mesh to your scene
+        scene.add(endEffectorMesh);
+
         // Link sliders to each part
         document.getElementById("baseSlider").addEventListener("input", (e) => {
             if (arm.base) {
@@ -135,6 +197,16 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAngle('wrist');
 
         computeForwardKinematics();
+    });
+
+    document.getElementById("computeIKButton").addEventListener("click", () => {
+        const ef = computeInverseKinematics();
+
+
+        // Set position of the end effector mesh based on calculated coordinates
+        endEffectorMesh.position.set(ef["efx"], ef["efy"], ef["efz"]);
+        
+
     });
 
     // Reset button functionality
